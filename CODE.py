@@ -54,6 +54,19 @@ def main():
             )
             return
 
+    # Clean & safely convert columns to numeric to avoid formatting errors
+    numeric_cols = [
+        "Streams_Millions",
+        "Popularity_Score",
+        "Duration_Sec",
+        "Danceability",
+        "Energy",
+        "Tempo_BPM",
+    ]
+    for col in numeric_cols:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
+
     # Sidebar Controls
     top_n = st.sidebar.slider(
         "Number of Top Items to Display", min_value=3, max_value=10, value=5
@@ -121,11 +134,8 @@ def main():
     # Tab 3: Top Genres
     with tab3:
         st.header(f"🎶 Top {top_n} Genres")
-        st.write(
-            f"Your #1 genre this year was **{top_genres.index[0]}**!"
-        )
+        st.write(f"Your #1 genre this year was **{top_genres.index[0]}**!")
 
-        # Native Streamlit Chart
         st.bar_chart(top_genres)
 
         st.subheader("Genre Breakdown")
@@ -147,18 +157,19 @@ def main():
                 f"#{idx} — {row.Song} by {row.Artist}", expanded=(idx == 1)
             ):
                 sc1, sc2, sc3 = st.columns(3)
-                sc1.write(f"**Album:** {row.Album}")
-                sc2.write(f"**Streams:** {row.Streams_Millions:.1f} Million")
-                sc3.write(f"**Popularity Score:** {row.Popularity_Score}/100")
+                sc1.write(f"**Album:** {getattr(row, 'Album', 'N/A')}")
+                sc2.write(
+                    f"**Streams:** {float(getattr(row, 'Streams_Millions', 0)):.1f} Million"
+                )
+                sc3.write(
+                    f"**Popularity Score:** {int(getattr(row, 'Popularity_Score', 0))}/100"
+                )
 
     # Tab 5: Top Artists
     with tab5:
         st.header(f"👑 Top {top_n} Artists")
-        st.write(
-            f"Your #1 artist was **{top_artists.index[0]}**!"
-        )
+        st.write(f"Your #1 artist was **{top_artists.index[0]}**!")
 
-        # Native Streamlit Chart
         st.bar_chart(top_artists)
 
         st.subheader("Streams by Artist")
