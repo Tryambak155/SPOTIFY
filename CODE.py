@@ -1,14 +1,14 @@
-import io
-import matplotlib.pyplot as plt
 import pandas as pd
 import streamlit as st
 
-# Set Streamlit Page Configuration
+# 1. Page Configuration & Theme Styling
 st.set_page_config(
-    page_title="Spotify Wrapped Dashboard", page_icon="🎧", layout="wide"
+    page_title="Spotify Wrapped",
+    page_icon="🎧",
+    layout="wide",
+    initial_sidebar_state="expanded",
 )
 
-# Custom Styling for Spotify Dark Theme
 st.markdown(
     """
     <style>
@@ -16,190 +16,25 @@ st.markdown(
         background-color: #121212;
         color: #FFFFFF;
     }
-    .metric-card {
+    .stMetric {
         background-color: #181818;
-        border-radius: 12px;
-        padding: 20px;
+        padding: 15px;
+        border-radius: 10px;
         border: 1px solid #282828;
-        text-align: center;
-        margin-bottom: 10px;
     }
-    .spotify-green { color: #1DB954; }
-    .spotify-yellow { color: #FFE600; }
-    .spotify-pink { color: #FF007F; }
-    .spotify-purple { color: #A020F0; }
     </style>
 """,
-    unsafe_allow_dict_style=True,
+    unsafe_allow_html=True,
 )
 
 
-def generate_visual_card(
-    df, total_minutes, top_genres, top_songs, top_artists, aura_metrics
-):
-    """Generates a high-res matplotlib Spotify Wrapped image card."""
-    plt.style.use("dark_background")
-    fig, ax = plt.subplots(figsize=(8, 11), facecolor="#121212")
-    ax.set_facecolor("#121212")
-
-    c_green, c_yellow, c_pink, c_purple, c_white, c_sub = (
-        "#1DB954",
-        "#FFE600",
-        "#FF007F",
-        "#A020F0",
-        "#FFFFFF",
-        "#B3B3B3",
-    )
-
-    # Title
-    plt.text(
-        0.5,
-        0.94,
-        "SPOTIFY WRAPPED",
-        color=c_green,
-        fontsize=24,
-        fontweight="bold",
-        ha="center",
-    )
-    plt.text(
-        0.5,
-        0.91,
-        "YOUR YEAR IN MUSIC",
-        color=c_sub,
-        fontsize=12,
-        ha="center",
-        fontweight="bold",
-    )
-
-    # Minutes & Top Genre
-    plt.text(
-        0.08,
-        0.83,
-        "LISTENING TIME",
-        color=c_yellow,
-        fontsize=13,
-        fontweight="bold",
-    )
-    plt.text(
-        0.08,
-        0.79,
-        f"{total_minutes:,} MINS",
-        color=c_white,
-        fontsize=28,
-        fontweight="bold",
-    )
-
-    plt.text(0.55, 0.83, "TOP GENRE", color=c_pink, fontsize=13, fontweight="bold")
-    plt.text(
-        0.55,
-        0.79,
-        f"{top_genres.index[0]}",
-        color=c_white,
-        fontsize=24,
-        fontweight="bold",
-    )
-
-    # Audio Aura
-    plt.text(
-        0.08,
-        0.70,
-        "AUDIO AURA",
-        color=c_purple,
-        fontsize=13,
-        fontweight="bold",
-    )
-    plt.text(
-        0.08,
-        0.66,
-        "Energetic & Groovy",
-        color=c_white,
-        fontsize=18,
-        fontweight="bold",
-    )
-    plt.text(
-        0.08,
-        0.63,
-        f"Dance: {aura_metrics['dance']}% | Energy: {aura_metrics['energy']}% | Tempo: {aura_metrics['bpm']} BPM",
-        color=c_sub,
-        fontsize=10,
-    )
-
-    # Top Songs
-    plt.text(
-        0.08, 0.54, "TOP SONGS", color=c_green, fontsize=15, fontweight="bold"
-    )
-    y_pos = 0.49
-    for idx, row in enumerate(top_songs.head(5).itertuples(), 1):
-        plt.text(
-            0.08,
-            y_pos,
-            f"{idx}. {row.Song}",
-            color=c_white,
-            fontsize=12,
-            fontweight="bold",
-        )
-        plt.text(
-            0.08,
-            y_pos - 0.022,
-            f"    {row.Artist} • {row.Streams_Millions:.1f}M Streams",
-            color=c_sub,
-            fontsize=9,
-        )
-        y_pos -= 0.055
-
-    # Top Artists
-    plt.text(
-        0.55,
-        0.54,
-        "TOP ARTISTS",
-        color=c_yellow,
-        fontsize=15,
-        fontweight="bold",
-    )
-    y_pos = 0.49
-    for idx, (artist, streams) in enumerate(
-        top_artists.head(5).items(), 1
-    ):
-        plt.text(
-            0.55,
-            y_pos,
-            f"{idx}. {artist}",
-            color=c_white,
-            fontsize=12,
-            fontweight="bold",
-        )
-        plt.text(
-            0.55,
-            y_pos - 0.022,
-            f"    {streams:,.1f}M Streams",
-            color=c_sub,
-            fontsize=9,
-        )
-        y_pos -= 0.055
-
-    ax.axis("off")
-    plt.tight_layout()
-
-    buf = io.BytesIO()
-    plt.savefig(
-        buf,
-        format="png",
-        dpi=300,
-        bbox_inches="tight",
-        facecolor=fig.get_facecolor(),
-    )
-    buf.seek(0)
-    plt.close()
-    return buf
-
-
 def main():
-    st.title("🎧 Your Personal Spotify Wrapped")
-    st.caption("Upload your music dataset or analyze default data.")
+    st.title("🎧 Your Spotify Wrapped")
+    st.caption("A summary of your year in music.")
 
-    # File Uploader
+    # 2. Dataset Loader
     uploaded_file = st.sidebar.file_uploader(
-        "Upload Dataset (.xlsx / .csv)", type=["xlsx", "csv"]
+        "Upload Dataset (.xlsx or .csv)", type=["xlsx", "csv"]
     )
 
     if uploaded_file is not None:
@@ -208,7 +43,6 @@ def main():
         else:
             df = pd.read_excel(uploaded_file, sheet_name="Music_Dataset")
     else:
-        # Default filename in local working directory
         try:
             df = pd.read_excel(
                 "international_music_dataset_expanded_finnal.xlsx",
@@ -216,16 +50,16 @@ def main():
             )
         except Exception:
             st.warning(
-                "Please upload a dataset file using the sidebar to continue."
+                "⚠️ Dataset not found locally. Please upload your dataset using the sidebar."
             )
             return
 
-    # Sidebar Options
+    # Sidebar Controls
     top_n = st.sidebar.slider(
-        "Select Number of Top Items", min_value=3, max_value=10, value=5
+        "Number of Top Items to Display", min_value=3, max_value=10, value=5
     )
 
-    # Compute Metrics
+    # 3. Calculate Metrics
     total_minutes = int(df["Duration_Sec"].sum() / 60)
     top_genres = df["Genre"].value_counts().head(top_n)
     top_songs = df.sort_values(
@@ -238,13 +72,11 @@ def main():
         .head(top_n)
     )
 
-    aura_metrics = {
-        "dance": int(df["Danceability"].mean() * 100),
-        "energy": int(df["Energy"].mean() * 100),
-        "bpm": int(df["Tempo_BPM"].mean()),
-    }
+    avg_danceability = int(df["Danceability"].mean() * 100)
+    avg_energy = int(df["Energy"].mean() * 100)
+    avg_bpm = int(df["Tempo_BPM"].mean())
 
-    # Tab Navigation (Story Experience)
+    # 4. Streamlit Wrapped Story Tabs
     tab1, tab2, tab3, tab4, tab5 = st.tabs(
         [
             "⏱️ Listening Time",
@@ -255,85 +87,88 @@ def main():
         ]
     )
 
+    # Tab 1: Listening Time
     with tab1:
         st.header("⏱️ Total Listening Time")
         col1, col2 = st.columns(2)
         with col1:
-            st.metric("Total Listening Time", f"{total_minutes:,} Minutes")
+            st.metric("Total Listening Time", f"{total_minutes:,} Mins")
             st.write(
                 "That puts you in the **top 1% of music lovers worldwide**!"
             )
-            st.write(f"Total Tracks Analyzed: `{len(df)}`")
-            st.write(f"Unique Artists Listened To: `{df['Artist'].nunique()}`")
+            st.write(f"• **Total Songs Analyzed:** `{len(df)}`")
+            st.write(
+                f"• **Unique Artists Discovered:** `{df['Artist'].nunique()}`"
+            )
         with col2:
             st.info(
                 "💡 **Fun Fact:** You listened to enough music to drive across the country multiple times!"
             )
 
+    # Tab 2: Audio Aura
     with tab2:
         st.header("🔮 Your Audio Aura")
-        col1, col2, col3 = st.columns(3)
-        col1.metric("Danceability", f"{aura_metrics['dance']}%")
-        col2.metric("Energy Level", f"{aura_metrics['energy']}%")
-        col3.metric("Average Tempo", f"{aura_metrics['bpm']} BPM")
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Danceability", f"{avg_danceability}%")
+        c2.metric("Energy Level", f"{avg_energy}%")
+        c3.metric("Average Tempo", f"{avg_bpm} BPM")
 
-        st.subheader("Vibe Analysis")
+        st.subheader("Your Vibe Summary")
         st.success(
-            "✨ **Your Aura Color:** Neon Green & Vibrant Violet — You thrive on energetic, high-tempo beats with expressive vocals."
+            "✨ **Aura Persona: High-Energy & Energetic Beats**\n\nYour listening habits show a love for lively tempos, upbeat dance tracks, and expressive vocals."
         )
 
+    # Tab 3: Top Genres
     with tab3:
-        st.header(f"🎶 Your Top {top_n} Genres")
+        st.header(f"🎶 Top {top_n} Genres")
+        st.write(
+            f"Your #1 genre this year was **{top_genres.index[0]}**!"
+        )
+
+        # Native Streamlit Chart
         st.bar_chart(top_genres)
+
+        st.subheader("Genre Breakdown")
         st.dataframe(
             top_genres.reset_index().rename(
-                columns={"index": "Genre", "Genre": "Track Count"}
+                columns={"Genre": "Genre Name", "count": "Song Count"}
             ),
-            use_container_width=True,
-        )
-
-    with tab4:
-        st.header(f"🔥 Top {top_n} Songs by Popularity & Streams")
-        st.dataframe(
-            top_songs[
-                [
-                    "Song",
-                    "Artist",
-                    "Album",
-                    "Popularity_Score",
-                    "Streams_Millions",
-                    "Genre",
-                ]
-            ],
             use_container_width=True,
             hide_index=True,
         )
 
+    # Tab 4: Top Songs
+    with tab4:
+        st.header(f"🔥 Top {top_n} Songs by Popularity & Streams")
+        st.write("The tracks you had on repeat all year long:")
+
+        for idx, row in enumerate(top_songs.itertuples(), start=1):
+            with st.expander(
+                f"#{idx} — {row.Song} by {row.Artist}", expanded=(idx == 1)
+            ):
+                sc1, sc2, sc3 = st.columns(3)
+                sc1.write(f"**Album:** {row.Album}")
+                sc2.write(f"**Streams:** {row.Streams_Millions:.1f} Million")
+                sc3.write(f"**Popularity Score:** {row.Popularity_Score}/100")
+
+    # Tab 5: Top Artists
     with tab5:
-        st.header(f"👑 Top {top_n} Artists by Stream Count")
+        st.header(f"👑 Top {top_n} Artists")
+        st.write(
+            f"Your #1 artist was **{top_artists.index[0]}**!"
+        )
+
+        # Native Streamlit Chart
         st.bar_chart(top_artists)
+
+        st.subheader("Streams by Artist")
         st.dataframe(
             top_artists.reset_index().rename(
                 columns={"Streams_Millions": "Total Streams (Millions)"}
             ),
             use_container_width=True,
+            hide_index=True,
         )
-
-    # Export Section
-    st.divider()
-    st.subheader("🖼️ Download Your Wrapped Image Summary")
-
-    img_buffer = generate_visual_card(
-        df, total_minutes, top_genres, top_songs, top_artists, aura_metrics
-    )
-    st.image(img_buffer, caption="Spotify Wrapped Card", width=400)
-
-    st.download_button(
-        label="📥 Download Spotify Wrapped Card",
-        data=img_buffer,
-        file_name="spotify_wrapped_summary.png",
-        mime="image/png",
-    )
 
 
 if __name__ == "__main__":
